@@ -37,9 +37,9 @@ import java.util.regex.Pattern;
 import org.apache.http.entity.AbstractHttpEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
 
+import ru.yandex.clickhouse.domain.ClickHouseFormat;
 import ru.yandex.clickhouse.jdbc.parser.ClickHouseSqlStatement;
 import ru.yandex.clickhouse.jdbc.parser.StatementType;
-
 import ru.yandex.clickhouse.response.ClickHouseResponse;
 import ru.yandex.clickhouse.settings.ClickHouseProperties;
 import ru.yandex.clickhouse.settings.ClickHouseQueryParam;
@@ -359,7 +359,7 @@ public class ClickHousePreparedStatementImpl extends ClickHouseStatementImpl imp
             Matcher matcher = VALUES.matcher(sql);
             if (matcher.find()) {
                 valuePosition = matcher.start();
-            }    
+            }
         }
 
         if (valuePosition < 0) {
@@ -370,7 +370,7 @@ public class ClickHousePreparedStatementImpl extends ClickHouseStatementImpl imp
         }
         String insertSql = sql.substring(0, valuePosition);
         BatchHttpEntity entity = new BatchHttpEntity(batchRows);
-        sendStream(entity, insertSql, additionalDBParams);
+        sendStream(entity, insertSql, ClickHouseFormat.TabSeparated, additionalDBParams);
         int[] result = new int[batchRows.size()];
         Arrays.fill(result, 1);
         batchRows = new ArrayList<>();
@@ -442,8 +442,7 @@ public class ClickHousePreparedStatementImpl extends ClickHouseStatementImpl imp
         if (currentResult != null) {
             return currentResult.getMetaData();
         }
-        
-        if (!parsedStmt.isQuery() || (!parsedStmt.isRecognized() && !isSelect(sql))) {
+        if (!parsedStmt.isQuery()) {
             return null;
         }
         ResultSet myRs = executeQuery(Collections.singletonMap(
